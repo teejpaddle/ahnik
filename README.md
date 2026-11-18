@@ -13,7 +13,7 @@ Arti, stuti and kirtan lyrics with the Gujarati line on top and its transliterat
 
 ## How it's built
 
-A static site with no build step: `index.html`, `assets/css/styles.css`, `assets/js/data.js` (all lyrics) and `assets/js/app.js` (hash routing, section tabs, text size). The look follows the warm-black, saffron design system: Instrument Serif headlines, Hanken Grotesk for UI and transliteration, Noto Sans/Serif Gujarati for Gujarati.
+A static site with no build step: `index.html`, `assets/css/styles.css`, `assets/js/data.js` (all lyrics) and `assets/js/app.js` (hash routing, section tabs, text size). The look follows the warm-black, saffron design system: Instrument Serif titles, SF Pro (`assets/fonts/SF-Pro.ttf`) for UI and transliteration, Noto Sans Gujarati for Gujarati.
 
 Run it locally with any static server, for example:
 

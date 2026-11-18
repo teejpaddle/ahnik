@@ -105,56 +105,22 @@
     return nav ? nav.getBoundingClientRect().height : 0;
   }
 
-  function footer() {
-    return `<footer class="footer">
-      <div class="container footer__inner">
-        <a class="wordmark" href="#/" style="font-size:20px">${FLAME}Ahnik</a>
-        <span>Gujarati lyrics with transliteration. Recordings play from YouTube.</span>
-      </div>
-    </footer>`;
-  }
-
-  function sectionNames(item) {
-    return item.sections.map((s) => s.en.replace(/\s*-\s*/, " ")).join(" · ");
-  }
-
   /* ---------- Home ---------- */
 
   function renderHome() {
-    const hour = new Date().getHours();
-    const suggested = ITEMS.find((i) => i.id === (hour < 12 ? "morning-arti" : "evening-arti"));
+    // Category order, then the items in each.
+    const ordered = CATEGORIES.flatMap((cat) => ITEMS.filter((i) => i.category === cat.id));
 
-    const groups = CATEGORIES.map((cat) => {
-      const items = ITEMS.filter((i) => i.category === cat.id);
-      if (!items.length) return "";
-      const rows = items
-        .map((item) => {
-          const titles = item.gu
-            ? `<span class="row__gu" lang="gu">${esc(item.gu)}</span><span class="row__en">${esc(item.en)}</span>`
-            : `<span class="row__en row__en--lead">${esc(item.en)}</span>`;
-          const meta = [];
-          if (item.sections.length > 1) meta.push(`<span>${esc(sectionNames(item))}</span>`);
-          if (item.author) meta.push(`<span>${esc(item.author.en)}</span>`);
-          if (item.video) meta.push(`<span>Recording</span>`);
-          return `<li>
-            <a class="row" href="#/${esc(item.id)}">
-              <span>
-                <span class="row__titles">${titles}</span>
-                <span class="row__meta">${meta.join("")}</span>
-              </span>
-              <span class="row__arrow">${ICONS.arrowRight}</span>
-            </a>
-          </li>`;
-        })
-        .join("");
-      return `<section class="library__group" aria-labelledby="cat-${esc(cat.id)}">
-        <div class="library__head">
-          <h2 class="library__heading" id="cat-${esc(cat.id)}">${esc(cat.en)} <span lang="gu">${esc(cat.gu)}</span></h2>
-          <span class="library__count">${items.length} ${items.length === 1 ? "page" : "pages"}</span>
-        </div>
-        <ul class="library__list">${rows}</ul>
-      </section>`;
-    }).join("");
+    const rows = ordered
+      .map(
+        (item, i) => `<li class="reveal" style="--i:${i}">
+          <a class="row" href="#/${esc(item.id)}">
+            <span class="row__title">${esc(item.en)}</span>
+            <span class="row__arrow">${ICONS.arrowRight}</span>
+          </a>
+        </li>`
+      )
+      .join("");
 
     app.innerHTML = `
       <div class="page">
@@ -162,30 +128,15 @@
         <header class="topnav">
           <div class="container topnav__row">
             <a class="wordmark" href="#/" aria-label="Ahnik home">${FLAME}Ahnik</a>
-            <span class="topnav__spacer"></span>
-            <a class="topnav__back" href="#library" style="margin-left:0">All lyrics</a>
           </div>
         </header>
-        <main id="main" tabindex="-1">
-          <section class="hero container">
-            <p class="overline reveal" style="--i:0"><span lang="gu">આહ્નિક</span> · Daily worship</p>
-            <h1 class="hero__title reveal" style="--i:1" tabindex="-1">Ahnik <em>sing along, line by line</em></h1>
-            <p class="hero__lede reveal" style="--i:2">Arti, stuti and kirtan with the Gujarati on top and its transliteration beneath, each beside a recording to follow.</p>
-            ${
-              suggested
-                ? `<div class="hero__actions reveal" style="--i:3">
-                    <a class="btn btn--primary" href="#/${esc(suggested.id)}">Open ${esc(suggested.en.toLowerCase())}</a>
-                    <a class="textlink" href="#library">Browse all lyrics ${ICONS.arrowRight}</a>
-                  </div>`
-                : ""
-            }
-          </section>
-          <div class="library container" id="library">${groups}</div>
+        <main id="main" class="library container" tabindex="-1">
+          <h1 class="visually-hidden" tabindex="-1">Ahnik</h1>
+          <ul class="library__list">${rows}</ul>
         </main>
-        ${footer()}
       </div>`;
 
-    document.title = "Ahnik · Arti and kirtan lyrics";
+    document.title = "Ahnik";
   }
 
   /* ---------- Lyrics page ---------- */
@@ -193,13 +144,6 @@
   function renderVerse(verse) {
     const classes = ["verse"];
     if (verse.refrain) classes.push("verse--refrain");
-
-    let label = "";
-    if (verse.refrain) {
-      label = `<p class="overline verse__label"><span lang="gu">ટેક</span><span class="en">Refrain</span></p>`;
-    } else if (verse.label) {
-      label = `<p class="overline verse__label"><span lang="gu">${esc(verse.label.gu)}</span><span class="en">${esc(verse.label.en)}</span></p>`;
-    }
 
     const heading = verse.heading
       ? `<h3 class="verse__heading"><span class="verse__heading-gu" lang="gu">${esc(verse.heading.gu)}</span><span class="verse__heading-en">${esc(verse.heading.en)}</span></h3>`
@@ -216,7 +160,7 @@
 
     return `<div class="${classes.join(" ")}">
       <div class="verse__num">${verse.n ? `<span class="visually-hidden">Verse </span>${verse.n}` : ""}</div>
-      <div class="verse__body">${label}${heading}${lines}</div>
+      <div class="verse__body">${heading}${lines}</div>
     </div>`;
   }
 
@@ -224,19 +168,17 @@
     const notes = section.notes
       ? `<div class="notes">${section.notes.map((n) => `<p lang="gu">${esc(n)}</p>`).join("")}</div>`
       : "";
-    const overline =
+    // A page with one section needs no section heading: the page title already names it.
+    const head =
       item.sections.length > 1
-        ? `<p class="overline">${index + 1} of ${item.sections.length}${section.ref ? ` · Ref. ${esc(section.ref)}` : ""}</p>`
-        : section.ref
-          ? `<p class="overline">Ref. ${esc(section.ref)}</p>`
-          : "";
-    return `<section class="lyrics-section" id="${esc(item.id)}--${esc(section.id)}" data-section="${esc(section.id)}" aria-labelledby="h-${esc(section.id)}-${index}">
-      <header class="lyrics-section__head">
-        ${overline}
-        <h2 class="lyrics-section__title" id="h-${esc(section.id)}-${index}">
-          <span lang="gu">${esc(section.gu)}</span><span class="en">${esc(section.en)}</span>
-        </h2>
-      </header>
+        ? `<header class="lyrics-section__head">
+            <h2 class="lyrics-section__title" id="h-${esc(section.id)}-${index}">${esc(section.en)}</h2>
+          </header>`
+        : "";
+    return `<section class="lyrics-section" id="${esc(item.id)}--${esc(section.id)}" data-section="${esc(section.id)}"${
+      head ? ` aria-labelledby="h-${esc(section.id)}-${index}"` : ""
+    }>
+      ${head}
       ${section.verses.map(renderVerse).join("")}
       ${notes}
     </section>`;
@@ -249,20 +191,11 @@
           ${item.sections
             .map(
               (s, i) =>
-                `<button type="button" class="tab" data-target="${esc(s.id)}" aria-current="${i === 0 ? "true" : "false"}">
-                  <span lang="gu">${esc(s.gu)}</span><span class="tab__en">${esc(s.en)}</span>
-                </button>`
+                `<button type="button" class="tab" data-target="${esc(s.id)}" aria-current="${i === 0 ? "true" : "false"}">${esc(s.en)}</button>`
             )
             .join("")}
         </nav>`
       : "";
-
-    const meta = [];
-    const cat = CATEGORIES.find((c) => c.id === item.category);
-    if (cat) meta.push(`<span>${esc(cat.en)}</span>`);
-    if (item.author) meta.push(`<span>${esc(item.author.en)}</span>`);
-    if (item.ref) meta.push(`<span>Ref. ${esc(item.ref)}</span>`);
-    if (multi) meta.push(`<span>${item.sections.length} sections</span>`);
 
     const video = item.video
       ? `<figure class="video">
@@ -276,7 +209,6 @@
               allowfullscreen></iframe>
           </div>
           <figcaption class="video__caption">
-            <span>Recording</span>
             <a href="${esc(item.video.url)}" target="_blank" rel="noopener">Watch on YouTube ${ICONS.external}<span class="visually-hidden"> (opens in a new tab)</span></a>
           </figcaption>
         </figure>`
@@ -301,21 +233,15 @@
         </header>
         <main id="main" class="container" tabindex="-1">
           <header class="item-head">
-            <p class="overline reveal" style="--i:0">${item.author ? `<span lang="gu">${esc(item.author.gu)}</span>` : esc(cat ? cat.en : "")}</p>
-            <h1 class="item-head__title reveal" style="--i:1" tabindex="-1">
-              ${item.gu ? `<span class="item-head__gu" lang="gu">${esc(item.gu)}</span>` : ""}
-              <span class="item-head__en">${esc(item.en)}</span>
-            </h1>
-            <p class="item-head__meta reveal" style="--i:2">${meta.join("")}</p>
+            <h1 class="item-head__title reveal" style="--i:1" tabindex="-1">${esc(item.en)}</h1>
           </header>
           <div class="item-layout">
-            <aside class="item-layout__media reveal" style="--i:3" aria-label="Recording">${video}</aside>
+            <aside class="item-layout__media reveal" style="--i:3" aria-label="Video">${video}</aside>
             <article class="item-layout__lyrics reveal" style="--i:4">
               ${item.sections.map((s, i) => renderSection(item, s, i)).join("")}
             </article>
           </div>
         </main>
-        ${footer()}
       </div>`;
 
     document.title = `${item.en} · Ahnik`;
