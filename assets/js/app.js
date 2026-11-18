@@ -6,6 +6,8 @@
   const app = document.getElementById("app");
   const root = document.documentElement;
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  // Site root, e.g. https://teejpaddle.github.io/ahnik/ — this script lives at <root>/assets/js/app.js.
+  const BASE = new URL("../../", document.currentScript.src).href;
 
   /* ---------- Helpers ---------- */
 
@@ -109,7 +111,7 @@
     return `<footer class="site-footer">
       <div class="container">
         <img
-          src="assets/branding/Standard%20Footer-White-Pragat%20Brahmaswarup.png"
+          src="${BASE}assets/branding/Standard%20Footer-White-Pragat%20Brahmaswarup.png"
           width="2850" height="600" loading="lazy" decoding="async"
           alt="Brahmaswarup Pramukh Swami Maharaj, BAPS Swaminarayan Sanstha, Pragat Brahmaswarup Mahant Swami Maharaj. www.BAPS.org" />
       </div>
@@ -125,7 +127,7 @@
     const rows = ordered
       .map(
         (item, i) => `<li class="reveal" style="--i:${i + 1}">
-          <a class="row" href="#/${esc(item.id)}">
+          <a class="row" href="${BASE}${esc(item.id)}/">
             <span class="row__title">${esc(item.en)}</span>
             <span class="row__arrow">${ICONS.arrowRight}</span>
           </a>
@@ -138,14 +140,14 @@
         <div class="aura" aria-hidden="true"></div>
         <header class="topnav">
           <div class="container topnav__row">
-            <a class="wordmark" href="#/" aria-label="Ahnik home">${FLAME}Ahnik</a>
+            <a class="wordmark" href="${BASE}" aria-label="Ahnik home">${FLAME}Ahnik</a>
           </div>
         </header>
         <main id="main" class="library container" tabindex="-1">
           <h1 class="visually-hidden" tabindex="-1">Ahnik</h1>
           <figure class="hero-photo reveal" style="--i:0">
             <img
-              src="assets/MSM_London23_Portraits_41.jpg"
+              src="${BASE}assets/MSM_London23_Portraits_41.jpg"
               width="3000" height="1827" decoding="async" fetchpriority="high"
               alt="Mahant Swami Maharaj performing arti" />
           </figure>
@@ -238,7 +240,7 @@
         <header class="topnav">
           <div class="container">
             <div class="topnav__row">
-              <a class="topnav__back" href="#/">${ICONS.chevronLeft}<span>All lyrics</span></a>
+              <a class="topnav__back" href="${BASE}">${ICONS.chevronLeft}<span>All lyrics</span></a>
               <span class="topnav__title" aria-hidden="true">${esc(item.en)}</span>
               <div class="textsize" role="group" aria-label="Lyrics text size">
                 <button type="button" class="textsize__btn textsize__btn--down" data-size="down" aria-label="Smaller text">A</button>
@@ -325,7 +327,6 @@
       const top = target.getBoundingClientRect().top + window.scrollY - navOffset() - 16;
       window.scrollTo({ top, behavior: smooth && !reducedMotion.matches ? "smooth" : "auto" });
       setActive(id);
-      history.replaceState(null, "", `#/${item.id}/${id}`);
     };
 
     tabs.forEach((t) =>
@@ -369,48 +370,26 @@
 
   /* ---------- Router ---------- */
 
-  let currentKey = null;
-
-  function parseHash() {
-    const hash = window.location.hash || "";
-    if (!hash.startsWith("#/")) return { view: "home", anchor: hash.slice(1) || null };
-    const [id, section] = hash.slice(2).split("/");
-    const item = ITEMS.find((i) => i.id === id);
-    if (!item) return { view: "home" };
-    return { view: "item", item, section: section || null };
-  }
-
-  function route() {
-    const r = parseHash();
-    const key = r.view === "item" ? "item:" + r.item.id : "home";
-
-    // In-page anchor on the home page (e.g. #library): let the browser scroll.
-    if (key === currentKey && r.view === "home") return;
-    if (key === currentKey && r.view === "item") return;
-
-    cleanup.forEach((fn) => fn());
-    cleanup = [];
-    currentKey = key;
-
-    if (r.view === "item") {
-      renderItem(r.item, r.section);
-      if (!r.section) window.scrollTo(0, 0);
-    } else {
-      root.style.setProperty("--tabs-h", "0px");
-      renderHome();
-      if (r.anchor) {
-        const el = document.getElementById(r.anchor);
-        if (el) requestAnimationFrame(() => el.scrollIntoView());
-      } else {
-        window.scrollTo(0, 0);
-      }
+  // Each lyric is a real page: <base>/<id>/ (for example /ahnik/arti/). The home page is <base>.
+  function resolve() {
+    // Links shared before clean URLs looked like <base>#/arti or #/evening-arti/dhun.
+    const legacy = (window.location.hash || "").match(/^#\/([^/]+)/);
+    if (legacy && ITEMS.some((i) => i.id === legacy[1])) {
+      window.location.replace(BASE + legacy[1] + "/");
+      return null;
     }
 
-    const h1 = app.querySelector("h1");
-    if (h1 && document.readyState === "complete") h1.focus({ preventScroll: true });
+    const basePath = new URL(BASE).pathname;
+    let rel = window.location.pathname;
+    if (rel.startsWith(basePath)) rel = rel.slice(basePath.length);
+    rel = rel.replace(/index\.html$/, "").replace(/\/+$/, "");
+
+    const item = ITEMS.find((i) => i.id === rel);
+    return item ? { view: "item", item } : { view: "home" };
   }
 
-  window.addEventListener("hashchange", route);
   applyScale();
-  route();
+  const r = resolve();
+  if (r && r.view === "item") renderItem(r.item, null);
+  else if (r) renderHome();
 })();

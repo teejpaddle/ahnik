@@ -11,6 +11,8 @@ Arti, stuti and kirtan lyrics with the Gujarati line on top and its transliterat
 | Arti (આરતી) | Arti | [YouTube](https://youtu.be/6q9MD8R146c) |
 | Godi (ગોડી) | Pad 1–4, Sadguru Brahmanand Swami | [YouTube](https://youtu.be/E6gqZSIC9ik) |
 
+Live: https://teejpaddle.github.io/ahnik/ — each lyric has its own link, such as https://teejpaddle.github.io/ahnik/arti/
+
 ## How it's built
 
 A static site with no build step: `index.html`, `assets/css/styles.css`, `assets/js/data.js` (all lyrics) and `assets/js/app.js` (hash routing, section tabs, text size). The look follows the warm-black, saffron design system: Instrument Serif titles, SF Pro (`assets/fonts/SF-Pro.ttf`) for UI and transliteration, Noto Sans Gujarati for Gujarati.
@@ -42,6 +44,12 @@ Add an entry to `window.AHNIK_ITEMS` in `assets/js/data.js`:
     },
   ],
 }
+```
+
+Then generate its page (and refresh the others) so it gets a clean URL like `/ahnik/my-kirtan/`:
+
+```bash
+node tools/build-pages.mjs
 ```
 
 ## Hosting
