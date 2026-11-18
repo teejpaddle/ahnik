@@ -105,6 +105,17 @@
     return nav ? nav.getBoundingClientRect().height : 0;
   }
 
+  function footer() {
+    return `<footer class="site-footer">
+      <div class="container">
+        <img
+          src="assets/branding/Standard%20Footer-White-Pragat%20Brahmaswarup.png"
+          width="2850" height="600" loading="lazy" decoding="async"
+          alt="Brahmaswarup Pramukh Swami Maharaj, BAPS Swaminarayan Sanstha, Pragat Brahmaswarup Mahant Swami Maharaj. www.BAPS.org" />
+      </div>
+    </footer>`;
+  }
+
   /* ---------- Home ---------- */
 
   function renderHome() {
@@ -113,7 +124,7 @@
 
     const rows = ordered
       .map(
-        (item, i) => `<li class="reveal" style="--i:${i}">
+        (item, i) => `<li class="reveal" style="--i:${i + 1}">
           <a class="row" href="#/${esc(item.id)}">
             <span class="row__title">${esc(item.en)}</span>
             <span class="row__arrow">${ICONS.arrowRight}</span>
@@ -132,8 +143,15 @@
         </header>
         <main id="main" class="library container" tabindex="-1">
           <h1 class="visually-hidden" tabindex="-1">Ahnik</h1>
+          <figure class="hero-photo reveal" style="--i:0">
+            <img
+              src="assets/MSM_London23_Portraits_41.jpg"
+              width="3000" height="1827" decoding="async" fetchpriority="high"
+              alt="Mahant Swami Maharaj performing arti" />
+          </figure>
           <ul class="library__list">${rows}</ul>
         </main>
+        ${footer()}
       </div>`;
 
     document.title = "Ahnik";
@@ -242,6 +260,7 @@
             </article>
           </div>
         </main>
+        ${footer()}
       </div>`;
 
     document.title = `${item.en} · Ahnik`;
